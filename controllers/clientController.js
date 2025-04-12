@@ -3,6 +3,13 @@ const { ClientAlbum, Album } = require("../models");
 // View purchased albums
 exports.viewPurchasedAlbums = async (req, res) => {
   const { clientId } = req.query;
+
+  if (!clientId) {
+    return res
+      .status(400)
+      .json({ message: "clientId is required in the query parameters." });
+  }
+
   try {
     const purchasedAlbums = await ClientAlbum.findAll({
       where: { userId: clientId },
