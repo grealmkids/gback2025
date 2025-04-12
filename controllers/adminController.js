@@ -60,3 +60,47 @@ exports.addAlbum = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// Create a new album
+exports.createAlbum = async (req, res) => {
+  try {
+    const album = await Album.create(req.body);
+    res.status(201).json(album);
+  } catch (error) {
+    console.error("Error creating album:", error);
+    res.status(500).json({ message: "Failed to create album", error });
+  }
+};
+
+// Update an existing album
+exports.updateAlbum = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [updated] = await Album.update(req.body, { where: { id } });
+    if (updated) {
+      const updatedAlbum = await Album.findByPk(id);
+      res.status(200).json(updatedAlbum);
+    } else {
+      res.status(404).json({ message: "Album not found" });
+    }
+  } catch (error) {
+    console.error("Error updating album:", error);
+    res.status(500).json({ message: "Failed to update album", error });
+  }
+};
+
+// Delete an album
+exports.deleteAlbum = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Album.destroy({ where: { id } });
+    if (deleted) {
+      res.status(200).json({ message: "Album deleted successfully" });
+    } else {
+      res.status(404).json({ message: "Album not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting album:", error);
+    res.status(500).json({ message: "Failed to delete album", error });
+  }
+};

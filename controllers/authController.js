@@ -47,7 +47,7 @@ exports.loginClient = async (req, res) => {
   }
 };
 
-// Send OTP to client
+// Send verification code to client
 exports.sendClientOTP = async (req, res) => {
   const { phoneOrEmail } = req.body;
   if (!phoneOrEmail) {
@@ -72,25 +72,25 @@ exports.sendClientOTP = async (req, res) => {
     user.verification_code = otp;
     await user.save();
 
-    console.log(`Generated OTP for ${phoneOrEmail}: ${otp}`); // Log the OTP for debugging
+    console.log(`Generated verification code for ${phoneOrEmail}: ${otp}`); // Log the verification code for debugging
 
     if (isEmail) {
-      // Send OTP via email using EmailService
+      // Send verification code via email using EmailService
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6;">
           <div style="background-color: #28a745; color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">G-REALM OTP</h1>
+            <h1 style="margin: 0;">G-REALM Verification Code</h1>
           </div>
           <div style="padding: 20px;">
             <p style="font-size: 16px; color: #333;">Hello,</p>
             <p style="font-size: 16px; color: #333;">
-              Your one-time password (OTP) is:
+              Your verification code is:
             </p>
             <div style="text-align: center; margin: 20px 0;">
               <span style="font-size: 24px; font-weight: bold; color: #28a745;">${otp}</span>
             </div>
             <p style="font-size: 16px; color: #333;">
-              Please use this OTP to verify your account. If you did not request this, please ignore this email.
+              Please use this verification code to verify your account. If you did not request this, please ignore this email.
             </p>
             <p style="font-size: 16px; color: #333;">Thank you,</p>
             <p style="font-size: 16px; color: #333;">The G-REALM Team</p>
@@ -100,13 +100,13 @@ exports.sendClientOTP = async (req, res) => {
 
       await emailService.sendHTMLEmail(
         phoneOrEmail,
-        "Your G-REALM OTP",
+        "Your G-REALM Verification Code",
         htmlContent
       );
-      res.json({ message: "OTP sent successfully via email" });
+      res.json({ message: "Verification code sent successfully via email" });
     } else {
-      // Send OTP via SMS
-      const message = `Your grealm.org verification number is ${otp}`; // Updated message to include grealm.org
+      // Send verification code via SMS
+      const message = `Your grealm.org verification code is ${otp}`; // Updated message to include grealm.org
       const smsResponse = await sendSMS(
         "alfredochola",
         "JesusisLORD",
@@ -115,7 +115,10 @@ exports.sendClientOTP = async (req, res) => {
         message
       );
       console.log(`SMS Response: ${smsResponse}`); // Log the SMS response for debugging
-      res.json({ message: "OTP sent successfully via SMS", smsResponse });
+      res.json({
+        message: "Verification code sent successfully via SMS",
+        smsResponse,
+      });
     }
   } catch (error) {
     console.error("Error in sendClientOTP:", error);
@@ -123,13 +126,13 @@ exports.sendClientOTP = async (req, res) => {
   }
 };
 
-// Verify OTP and login
+// Verify verification code and login
 exports.verifyOTP = async (req, res) => {
   const { phoneOrEmail, otp } = req.body;
   if (!phoneOrEmail || !otp) {
     return res
       .status(400)
-      .json({ message: "Phone or email and OTP are required." });
+      .json({ message: "Phone or email and verification code are required." });
   }
 
   try {
@@ -145,15 +148,17 @@ exports.verifyOTP = async (req, res) => {
     }
 
     if (user.verification_code !== otp) {
-      return res.status(401).json({ message: "Invalid OTP." });
+      return res.status(401).json({ message: "Invalid verification code." });
     }
 
-    // Update account status to verified after successful OTP verification
+    // Update account status to verified after successful verification code verification
     user.accountStatus = "verified";
     user.verification_code = null;
     await user.save();
 
-    res.json({ message: "OTP verified successfully. Login successful." });
+    res.json({
+      message: "Verification code verified successfully. Login successful.",
+    });
   } catch (error) {
     console.error("Error in verifyOTP:", error);
     res.status(500).json({ message: "Server error", error });

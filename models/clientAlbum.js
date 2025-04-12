@@ -11,7 +11,7 @@ const ClientAlbum = sequelize.define(
       references: { model: "user", key: "id" }, // Corrected table name
     },
     albumId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING, // Match the data type of the `id` column in the `album` table
       allowNull: false,
       references: { model: "album", key: "id" }, // Corrected table name
     },
