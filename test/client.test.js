@@ -24,4 +24,14 @@ describe("Client API Tests", () => {
       "Client album row inserted successfully."
     );
   });
+
+  it("should fetch details of a specific album by ID", async () => {
+    const albumId = 1; // Replace with a valid album ID in your database
+    const response = await request(app).get(`/api/client/albums/${albumId}`);
+
+    console.log("Album Details Response:", response.body);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty("id", albumId);
+  });
 });

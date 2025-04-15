@@ -20,6 +20,24 @@ router.get("/albums", async (req, res) => {
   }
 });
 
+// Route to fetch details of a specific album by ID
+router.get("/albums/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const album = await Album.findByPk(id);
+
+    if (!album) {
+      return res.status(404).json({ message: "Album not found" });
+    }
+
+    res.status(200).json(album);
+  } catch (error) {
+    console.error(`Error fetching album with ID ${id}:`, error);
+    res.status(500).json({ message: "Failed to fetch album details", error });
+  }
+});
+
 router.post("/insert-client-album", async (req, res) => {
   const { userId, albumId } = req.body;
 
