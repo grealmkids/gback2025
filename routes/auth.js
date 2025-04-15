@@ -1,22 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const {
-  loginAdmin,
-  loginClient,
-  sendClientOTP,
-  verifyOTP,
-} = require("../controllers/authController");
+const { sendClientOTP, verifyOTP } = require("../controllers/authController");
 
-// Admin login
-router.post("/admin/login", loginAdmin);
+// Send OTP to user (email or phone)
+router.post("/send-otp", sendClientOTP);
 
-// Client login
-router.post("/client/login", loginClient);
-
-// Send OTP to client
-router.post("/client/send-otp", sendClientOTP);
-
-// Verify OTP and login
+// Verify OTP only
 router.post("/verify-otp", verifyOTP);
 
 module.exports = router;

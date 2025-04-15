@@ -13,40 +13,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Admin login
-exports.loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ where: { email, role: "admin" } });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    res.json({ message: "Admin login successful" });
-  } catch (error) {
-    console.error("Error in loginAdmin:", error);
-    res.status(500).json({ message: "Server error", error });
-  }
-};
-
-// Client login
-exports.loginClient = async (req, res) => {
-  const { phoneOrEmail, password } = req.body;
-  try {
-    const user = await User.findOne({
-      where: phoneOrEmail.includes("@")
-        ? { email: phoneOrEmail, role: "client" }
-        : { phone: phoneOrEmail, role: "client" },
-    });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    res.json({ message: "Client login successful" });
-  } catch (error) {
-    console.error("Error in loginClient:", error);
-    res.status(500).json({ message: "Server error", error });
-  }
-};
-
 // Send verification code to client
 exports.sendClientOTP = async (req, res) => {
   const { phoneOrEmail } = req.body;
@@ -54,72 +20,55 @@ exports.sendClientOTP = async (req, res) => {
     return res.status(400).json({ message: "Phone or email is required." });
   }
   try {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Find the user by email or phone
     const isEmail = phoneOrEmail.includes("@");
     const user = await User.findOne({
-      where: isEmail
-        ? { email: phoneOrEmail, role: "client" }
-        : { phone: phoneOrEmail, role: "client" },
+      where: isEmail ? { email: phoneOrEmail } : { phone: phoneOrEmail },
     });
 
     if (!user) {
       return res.status(404).json({
         message:
-          "Client not found. Please ensure the phone number or email is registered in the system.",
+          "User not found. Please ensure the phone number or email is registered in the system.",
       });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Save the OTP in the user's verification_code column
     user.verification_code = otp;
     await user.save();
 
-    console.log(`Generated verification code for ${phoneOrEmail}: ${otp}`); // Log the verification code for debugging
+    console.log(`Generated OTP: ${otp}`);
 
+    // Send OTP via email or SMS
     if (isEmail) {
-      // Send verification code via email using EmailService
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6;">
           <div style="background-color: #28a745; color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">G-REALM Verification Code</h1>
+            <h1 style="margin: 0;">Your G-REALM Login Code</h1>
           </div>
           <div style="padding: 20px;">
-            <p style="font-size: 16px; color: #333;">Hello,</p>
-            <p style="font-size: 16px; color: #333;">
-              Your verification code is:
-            </p>
+            <p style="font-size: 16px; color: #333;">Here is your verification code:</p>
             <div style="text-align: center; margin: 20px 0;">
               <span style="font-size: 24px; font-weight: bold; color: #28a745;">${otp}</span>
             </div>
-            <p style="font-size: 16px; color: #333;">
-              Please use this verification code to verify your account. If you did not request this, please ignore this email.
-            </p>
-            <p style="font-size: 16px; color: #333;">Thank you,</p>
-            <p style="font-size: 16px; color: #333;">The G-REALM Team</p>
           </div>
         </div>
       `;
-
       await emailService.sendHTMLEmail(
         phoneOrEmail,
-        "Your G-REALM Verification Code",
+        "Your Verification Code",
         htmlContent
       );
-      res.json({ message: "Verification code sent successfully via email" });
     } else {
-      // Send verification code via SMS
-      const message = `Your grealm.org verification code is ${otp}`; // Updated message to include grealm.org
-      const smsResponse = await sendSMS(
-        "alfredochola",
-        "JesusisLORD",
-        "Egosms",
-        phoneOrEmail,
-        message
-      );
-      console.log(`SMS Response: ${smsResponse}`); // Log the SMS response for debugging
-      res.json({
-        message: "Verification code sent successfully via SMS",
-        smsResponse,
-      });
+      const message = `Your verification code is: ${otp}`;
+      username = "alfredochola"; // Replace with your SMS username
+      password = "JesusisLORD"; // Replace with your SMS password
+      await sendSMS(username, password, "sender", phoneOrEmail, message);
     }
+
+    res.json({ message: "OTP sent successfully." });
   } catch (error) {
     console.error("Error in sendClientOTP:", error);
     res.status(500).json({ message: "Server error", error });
@@ -128,36 +77,29 @@ exports.sendClientOTP = async (req, res) => {
 
 // Verify verification code and login
 exports.verifyOTP = async (req, res) => {
-  const { phoneOrEmail, otp } = req.body;
-  if (!phoneOrEmail || !otp) {
-    return res
-      .status(400)
-      .json({ message: "Phone or email and verification code are required." });
+  const { otp } = req.body;
+  if (!otp) {
+    return res.status(400).json({ message: "OTP is required." });
   }
 
   try {
-    const isEmail = phoneOrEmail.includes("@");
-    const user = await User.findOne({
-      where: isEmail
-        ? { email: phoneOrEmail, role: "client" }
-        : { phone: phoneOrEmail, role: "client" },
-    });
+    // Simulate OTP verification logic
+    const user = await User.findOne({ where: { verification_code: otp } });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return res.status(401).json({ message: "Invalid OTP." });
     }
 
-    if (user.verification_code !== otp) {
-      return res.status(401).json({ message: "Invalid verification code." });
-    }
-
-    // Update account status to verified after successful verification code verification
-    user.accountStatus = "verified";
+    // Remove the verification code after successful verification
     user.verification_code = null;
     await user.save();
 
+    // Remove sensitive information like password
+    const { password, ...userDetails } = user.toJSON();
+
     res.json({
-      message: "Verification code verified successfully. Login successful.",
+      message: "OTP verified successfully.",
+      user: userDetails,
     });
   } catch (error) {
     console.error("Error in verifyOTP:", error);

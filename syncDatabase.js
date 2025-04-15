@@ -36,7 +36,6 @@ async function syncDatabase() {
     // Add album data
     const albums = [
       {
-        id: "domestic-animals",
         title: "Domestic Animals",
         image: "/assets/domesticanimals.jpg",
         songs: 4,
@@ -53,9 +52,9 @@ async function syncDatabase() {
           "Domestic Animal Young Ones",
           "11 Domestic Animals",
         ],
+        downloadUrl: "http://example.com/domestic-animals",
       },
       {
-        id: "wild-animals",
         title: "Wild Animals",
         image: "/assets/wildanimals.jpg",
         songs: 4,
@@ -72,9 +71,9 @@ async function syncDatabase() {
           "Wild vs Domestic",
           "11 Wild Animals",
         ],
+        downloadUrl: "http://example.com/wild-animals",
       },
       {
-        id: "my-body",
         title: "My Body",
         image: "/assets/body.jpg",
         songs: 8,
@@ -91,6 +90,7 @@ async function syncDatabase() {
           "Taking Care of My Body",
           "Growing Up",
         ],
+        downloadUrl: "http://example.com/my-body",
       },
     ];
 

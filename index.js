@@ -5,7 +5,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Configure CORS to allow only specific origins
-const allowedOrigins = ["https://grealm.org", "http://localhost:4200"];
+const allowedOrigins = [
+  "https://grealm.org",
+  "http://localhost:4200",
+  "http://localhost:59253",
+];
 app.use(
   cors({
     origin: (origin, callback) => {

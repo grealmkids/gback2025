@@ -1,6 +1,6 @@
 const { ClientAlbum, Album } = require("../models");
 
-// View purchased albums
+// Update the attributes to include 'downloadUrl' (renamed to 'downloadLink' in the response)
 exports.viewPurchasedAlbums = async (req, res) => {
   const { clientId } = req.query;
 
@@ -16,7 +16,7 @@ exports.viewPurchasedAlbums = async (req, res) => {
       include: [
         {
           model: Album,
-          attributes: ["title", "downloadLink"],
+          attributes: ["title", ["downloadUrl", "downloadLink"]],
         },
       ],
     });
