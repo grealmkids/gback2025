@@ -65,8 +65,8 @@ app.get("/health", (req, res) => {
   res.json({ status: "OK", message: "Grealm Backend API is running" });
 });
 
-// Root endpoint
-app.get("/", (req, res) => {
+// API info endpoint (moved from root)
+app.get("/api", (req, res) => {
   res.json({
     message: "Welcome to Grealm Backend API",
     endpoints: {
