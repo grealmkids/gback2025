@@ -16,7 +16,7 @@ beforeAll(async () => {
   // Create admin user
   const adminPassword = await bcrypt.hash("password", 10);
   await User.create({
-    email: "admin@example.com",
+    email: "grealmkids@gmail.com",
     password: adminPassword,
     role: "admin",
     phone: null, // Ensure phone is not set for admin
@@ -25,7 +25,7 @@ beforeAll(async () => {
   // Create client user
   const clientPassword = await bcrypt.hash("password", 10);
   await User.create({
-    email: "client@example.com",
+    email: "ochalfie@gmail.com",
     password: clientPassword,
     role: "client",
     phone: "256773913902", // Updated phone number

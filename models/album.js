@@ -53,6 +53,11 @@ const Album = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    previewvideo: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "URL or path to preview video for the album cover",
+    },
   },
   {
     tableName: "album",

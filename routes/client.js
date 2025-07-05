@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { viewPurchasedAlbums } = require("../controllers/clientController");
+const {
+  viewPurchasedAlbums,
+  saveBillingAddress,
+  getBillingAddress,
+  createUserIfNotExists,
+} = require("../controllers/clientController");
 const Album = require("../models/album");
 const ClientAlbum = require("../models/clientAlbum");
 
@@ -59,5 +64,12 @@ router.post("/insert-client-album", async (req, res) => {
       .json({ message: "Failed to insert client album row.", error });
   }
 });
+
+// Billing address routes
+router.post("/billing-address", saveBillingAddress);
+router.get("/billing-address", getBillingAddress);
+
+// User management routes
+router.post("/create-user", createUserIfNotExists);
 
 module.exports = router;
