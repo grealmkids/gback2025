@@ -1,8 +1,7 @@
 -- Create all tables for the Grealm backend application
 -- Run this script in phpMyAdmin to create the database structure
 
--- Create the database (if it doesn't exist)
-CREATE DATABASE IF NOT EXISTS greatmcj_grealm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- Use the existing database (should already be created in cPanel)
 USE greatmcj_grealm;
 
 -- 1. Users table
