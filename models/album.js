@@ -57,6 +57,10 @@ const Album = sequelize.define(
       type: DataTypes.STRING, // URL for folder zip download
       allowNull: true,
     },
+    categoryId: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // Allow null for existing albums initially, or update
+    },
     previewvideo: {
       type: DataTypes.STRING,
       allowNull: true,

@@ -1,6 +1,12 @@
-const { ClientAlbum, Album } = require("../models");
-const BillingAddress = require("../models/billingAddress");
-const User = require("../models/user");
+const {
+  User,
+  ClientAlbum,
+  Album,
+  BillingAddress,
+  Category,
+  Video,
+  Book
+} = require("../models");
 
 // Update the attributes to include 'downloadUrl' (renamed to 'downloadLink' in the response)
 exports.viewPurchasedAlbums = async (req, res) => {
@@ -43,7 +49,7 @@ exports.getAllAlbums = async (req, res) => {
       where,
       attributes: { exclude: ["downloadUrl"] },
     });
-    console.log(`=== FETCHED ALBUMS (${albums.length}) ===`);
+    console.log(`=== FETCHED ALBUMS(${albums.length}) === `);
     if (albums.length > 0) {
       console.log(JSON.stringify(albums, null, 2));
     } else {
@@ -95,17 +101,17 @@ exports.saveBillingAddress = async (req, res) => {
       });
     }
 
-    console.log(`Looking for user with email: ${email}`);
+    console.log(`Looking for user with email: ${email} `);
 
     // Find user by email
     let user = await User.findOne({ where: { email } });
     console.log(
-      `User found:`,
-      user ? `ID: ${user.id}, Email: ${user.email}` : "No user found"
+      `User found: `,
+      user ? `ID: ${user.id}, Email: ${user.email} ` : "No user found"
     );
 
     if (!user) {
-      console.log(`Creating new user with email: ${email}`);
+      console.log(`Creating new user with email: ${email} `);
       // Auto-create user if they don't exist
       user = await User.create({
         email,
@@ -115,7 +121,7 @@ exports.saveBillingAddress = async (req, res) => {
         firstname: first_name || null,
         lastname: last_name || null,
       });
-      console.log(`User created successfully: ID ${user.id}`);
+      console.log(`User created successfully: ID ${user.id} `);
     }
 
     // Check if billing address already exists for this user
@@ -177,7 +183,7 @@ exports.saveBillingAddress = async (req, res) => {
       if (field === 'email' || field === 'email_address') field = 'Email address';
 
       return res.status(409).json({
-        message: `${field} already exists. Please use a different one or contact support.`,
+        message: `${field} already exists.Please use a different one or contact support.`,
         errorType: error.name
       });
     }
@@ -292,12 +298,51 @@ exports.downloadFile = async (req, res) => {
       responseType: "stream",
     });
 
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Disposition", `attachment; filename = "${filename}"`);
     res.setHeader("Content-Type", response.headers["content-type"]);
 
     response.data.pipe(res);
   } catch (error) {
     console.error("Error downloading file:", error);
     res.status(500).json({ message: "Failed to download file.", error: error.message });
+  }
+};
+
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Category.findAll({ order: [['displayOrder', 'ASC']] });
+    res.status(200).json(categories);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).json({ message: "Failed to fetch categories" });
+  }
+};
+
+exports.getProductsByCategory = async (req, res) => {
+  const { categoryId } = req.params;
+  try {
+    const category = await Category.findByPk(categoryId);
+    if (!category) return res.status(404).json({ message: "Category not found" });
+
+    let products = [];
+    // Basic logic: determine table based on name or type.
+    // Ideally we use 'type' column.
+    // 'COLLECTION' -> Albums
+    // 'VIDEO' -> Videos
+    // 'PDF' -> Books
+
+    // Or we can query all and return empty if none, but let's stick to the mapped logic
+    if (category.name.includes("Albums")) {
+      products = await Album.findAll({ where: { categoryId } });
+    } else if (category.type === 'VIDEO') {
+      products = await Video.findAll({ where: { categoryId } });
+    } else if (category.type === 'PDF') {
+      products = await Book.findAll({ where: { categoryId } });
+    }
+
+    res.status(200).json({ category, products });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Failed to fetch products" });
   }
 };

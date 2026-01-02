@@ -7,6 +7,8 @@ const {
   createUserIfNotExists,
   getAllAlbums,
   downloadFile,
+  getCategories,
+  getProductsByCategory,
 } = require("../controllers/clientController");
 const Album = require("../models/album");
 const ClientAlbum = require("../models/clientAlbum");
@@ -66,5 +68,9 @@ router.get("/billing-address", getBillingAddress);
 
 // User management routes
 router.post("/create-user", createUserIfNotExists);
+
+// Dynamic Products Routes
+router.get("/categories", getCategories);
+router.get("/products/:categoryId", getProductsByCategory); // Fetch products by category ID
 
 module.exports = router;
