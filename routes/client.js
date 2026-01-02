@@ -5,6 +5,7 @@ const {
   saveBillingAddress,
   getBillingAddress,
   createUserIfNotExists,
+  getAllAlbums,
 } = require("../controllers/clientController");
 const Album = require("../models/album");
 const ClientAlbum = require("../models/clientAlbum");
@@ -12,18 +13,8 @@ const ClientAlbum = require("../models/clientAlbum");
 // View purchased albums
 router.get("/purchased-albums", viewPurchasedAlbums);
 
-// Alias route for fetching all albums
-router.get("/albums", async (req, res) => {
-  try {
-    const albums = await Album.findAll({
-      attributes: { exclude: ["downloadUrl"] },
-    });
-    res.status(200).json(albums);
-  } catch (error) {
-    console.error("Error fetching albums at /api/albums:", error);
-    res.status(500).json({ message: "Failed to fetch albums", error });
-  }
-});
+// Route for fetching all albums with optional status filter
+router.get("/albums", getAllAlbums);
 
 // Route to fetch details of a specific album by ID
 router.get("/albums/:id", async (req, res) => {

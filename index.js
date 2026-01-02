@@ -57,6 +57,9 @@ app.use("/api/auth", authRoutes);
 // Mount client routes
 app.use("/api/client", clientRoutes);
 
+// Mount homepage routes
+app.use("/api/homepage", require("./routes/homepage"));
+
 // Placeholder for routes
 app.use("/api", require("./routes"));
 

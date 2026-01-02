@@ -36,10 +36,15 @@ CREATE TABLE IF NOT EXISTS `album` (
   `contents` JSON NOT NULL,
   `downloadUrl` VARCHAR(255) NULL,
   `previewvideo` VARCHAR(255) NULL COMMENT 'URL or path to preview video for the album cover',
+  `description` TEXT NULL,
+  `status` VARCHAR(50) NOT NULL DEFAULT 'completed',
+  `youtubeUrl` VARCHAR(255) NULL,
+  `s3Url` VARCHAR(255) NULL,
   `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_title` (`title`),
-  INDEX `idx_usd` (`usd`)
+  INDEX `idx_usd` (`usd`),
+  INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Client-Album relationship table
@@ -88,26 +93,26 @@ INSERT INTO `user` (`email`, `password`, `role`, `accountStatus`, `phone`, `firs
 ('grealmkids@gmail.com', '', 'client', 'unverified', '256701234567', 'Grealm', 'Kids', 'Uganda');
 
 -- Sample Albums
-INSERT INTO `album` (`title`, `image`, `songs`, `video`, `audio`, `coloringPics`, `coloredPics`, `ugx`, `usd`, `contents`, `downloadUrl`, `previewvideo`, `createdAt`, `updatedAt`) VALUES
+INSERT INTO `album` (`title`, `image`, `songs`, `video`, `audio`, `coloringPics`, `coloredPics`, `ugx`, `usd`, `contents`, `downloadUrl`, `previewvideo`, `description`, `status`, `youtubeUrl`, `s3Url`, `createdAt`, `updatedAt`) VALUES
 ('Domestic Animals', '/assets/domesticanimals.jpg', 4, 4, 4, 15, 15, '10,000', 4.00, 
  '[\"Domestic Animal Names\", \"Domestic Animal Sounds\", \"Domestic Animal Homes\", \"Domestic Animal Young Ones\", \"11 Domestic Animals\"]', 
- 'http://example.com/domestic-animals', '/assets/previews/domestic-animals-preview.mp4', NOW(), NOW()),
+ 'http://example.com/domestic-animals', '/assets/previews/domestic-animals-preview.mp4', 'A fun collection of domestic animals for kids', 'completed', NULL, NULL, NOW(), NOW()),
 
 ('Wild Animals', '/assets/wildanimals.jpg', 6, 5, 6, 20, 20, '12,000', 5.00, 
  '[\"Wild Animal Names\", \"Wild Animal Sounds\", \"Animal Habitats\", \"Predators and Prey\", \"Safari Adventure\", \"Jungle Sounds\"]', 
- 'http://example.com/wild-animals', '/assets/previews/wild-animals-preview.mp4', NOW(), NOW()),
+ 'http://example.com/wild-animals', '/assets/previews/wild-animals-preview.mp4', 'Exciting wild animal adventures', 'completed', NULL, NULL, NOW(), NOW()),
 
 ('Ocean Life', '/assets/oceanlife.jpg', 5, 4, 5, 18, 18, '11,000', 4.50, 
  '[\"Sea Creatures\", \"Ocean Sounds\", \"Underwater Adventure\", \"Fish and Dolphins\", \"Deep Sea Exploration\"]', 
- 'http://example.com/ocean-life', '/assets/previews/ocean-life-preview.mp4', NOW(), NOW()),
+ 'http://example.com/ocean-life', '/assets/previews/ocean-life-preview.mp4', 'Explore ocean life and creatures', 'completed', NULL, NULL, NOW(), NOW()),
 
 ('Farm Animals', '/assets/farmanimals.jpg', 7, 6, 7, 25, 25, '9,000', 3.50, 
  '[\"Farm Animal Names\", \"Farm Sounds\", \"Life on the Farm\", \"Baby Farm Animals\", \"Farming Activities\", \"Barn Life\", \"Farm Vehicles\"]', 
- 'http://example.com/farm-animals', '/assets/previews/farm-animals-preview.mp4', NOW(), NOW()),
+ 'http://example.com/farm-animals', '/assets/previews/farm-animals-preview.mp4', 'A kids friendly farm adventure', 'completed', NULL, NULL, NOW(), NOW()),
 
 ('Birds of the Sky', '/assets/birds.jpg', 5, 4, 5, 16, 16, '10,500', 4.25, 
  '[\"Bird Songs\", \"Flying High\", \"Nest Building\", \"Bird Migration\", \"Colorful Feathers\"]', 
- 'http://example.com/birds-sky', '/assets/previews/birds-preview.mp4', NOW(), NOW());
+ 'http://example.com/birds-sky', '/assets/previews/birds-preview.mp4', 'Songs and stories about birds', 'completed', NULL, NULL, NOW(), NOW());
 
 -- Sample Client-Album relationships
 INSERT INTO `client_album` (`userId`, `albumId`) VALUES

@@ -58,6 +58,24 @@ const Album = sequelize.define(
       allowNull: true,
       comment: "URL or path to preview video for the album cover",
     },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "completed",
+      comment: "Project status: 'completed', 'in_progress', 'future'",
+    },
+    youtubeUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    s3Url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     tableName: "album",

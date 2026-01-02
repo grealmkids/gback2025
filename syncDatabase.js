@@ -4,6 +4,9 @@ const sequelize = require("./config/database");
 const User = require("./models/user");
 const Album = require("./models/album");
 const ClientAlbum = require("./models/clientAlbum");
+const HomepageProduction = require("./models/HomepageProduction");
+const HomepageService = require("./models/HomepageService");
+const seedHomepageData = require("./seedHomepage");
 const bcrypt = require("bcrypt");
 
 // Define associations
@@ -17,6 +20,9 @@ async function syncDatabase() {
   try {
     await sequelize.sync({ force: true }); // Use force: true to drop and recreate tables
     console.log("Database synchronized successfully.");
+
+    // Seed Homepage Data
+    await seedHomepageData();
 
     // Hash the password before inserting
     const hashedPassword = await bcrypt.hash("password123", 10);

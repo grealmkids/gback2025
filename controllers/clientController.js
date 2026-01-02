@@ -30,10 +30,17 @@ exports.viewPurchasedAlbums = async (req, res) => {
   }
 };
 
-// Modify the API to exclude the `downloadUrl` field when returning all albums
+// Modify the API to exclude the `downloadUrl` field and support optional status filtering when returning all albums
 exports.getAllAlbums = async (req, res) => {
+  const { status } = req.query;
   try {
+    const where = {};
+    if (status) {
+      where.status = status;
+    }
+
     const albums = await Album.findAll({
+      where,
       attributes: { exclude: ["downloadUrl"] },
     });
     res.status(200).json(albums);
