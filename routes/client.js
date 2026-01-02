@@ -6,6 +6,7 @@ const {
   getBillingAddress,
   createUserIfNotExists,
   getAllAlbums,
+  downloadFile,
 } = require("../controllers/clientController");
 const Album = require("../models/album");
 const ClientAlbum = require("../models/clientAlbum");
@@ -15,6 +16,9 @@ router.get("/purchased-albums", viewPurchasedAlbums);
 
 // Route for fetching all albums with optional status filter
 router.get("/albums", getAllAlbums);
+
+// Proxy route for file downloads
+router.get("/download", downloadFile);
 
 // Route to fetch details of a specific album by ID
 router.get("/albums/:id", async (req, res) => {
