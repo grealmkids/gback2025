@@ -8,20 +8,26 @@ const ClientAlbum = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: "user", key: "id" }, // Corrected table name
+      references: { model: "user", key: "id" },
     },
     albumId: {
-      type: DataTypes.INTEGER, // Match the updated data type of the `id` column in the `album` table
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: { model: "album", key: "id" },
+    },
+    paymentStatus: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "PENDING", // PENDING, FAILED, PAID, INITIATED
+      comment: "Payment status of the order",
     },
   },
   {
     tableName: "client_album",
-    timestamps: false,
+    timestamps: true, // Enable timestamps for createdAt/updatedAt
   }
 );
 
-ClientAlbum.belongsTo(sequelize.models.Album, { foreignKey: "albumId" });
+// ClientAlbum.belongsTo(sequelize.models.Album, { foreignKey: "albumId" });
 
 module.exports = ClientAlbum;
