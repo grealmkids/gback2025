@@ -6,6 +6,7 @@ const BillingAddress = require("./billingAddress");
 const Category = require("./category");
 const Video = require("./video");
 const Book = require("./book");
+const AfricanStory = require("./africanStory");
 
 // Define associations
 ClientAlbum.belongsTo(Album, { foreignKey: "albumId" });
@@ -24,6 +25,9 @@ Video.belongsTo(Category, { foreignKey: "categoryId" });
 Category.hasMany(Book, { foreignKey: "categoryId" });
 Book.belongsTo(Category, { foreignKey: "categoryId" });
 
+Category.hasMany(AfricanStory, { foreignKey: "categoryId" });
+AfricanStory.belongsTo(Category, { foreignKey: "categoryId" });
+
 // BillingAddress associations are defined in the billingAddress.js file (or handled via model definition usually, but we'll leave this comment)
 
 module.exports = {
@@ -34,5 +38,6 @@ module.exports = {
     BillingAddress,
     Category,
     Video,
-    Book
+    Book,
+    AfricanStory
 };

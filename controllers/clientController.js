@@ -5,7 +5,8 @@ const {
   BillingAddress,
   Category,
   Video,
-  Book
+  Book,
+  AfricanStory
 } = require("../models");
 
 // Update the attributes to include 'downloadUrl' (renamed to 'downloadLink' in the response)
@@ -325,24 +326,53 @@ exports.getProductsByCategory = async (req, res) => {
     if (!category) return res.status(404).json({ message: "Category not found" });
 
     let products = [];
-    // Basic logic: determine table based on name or type.
-    // Ideally we use 'type' column.
-    // 'COLLECTION' -> Albums
-    // 'VIDEO' -> Videos
     // 'PDF' -> Books
 
-    // Or we can query all and return empty if none, but let's stick to the mapped logic
     if (category.name.includes("Albums")) {
       products = await Album.findAll({ where: { categoryId } });
+    } else if (category.name.includes("African")) { // African Stories
+      products = await AfricanStory.findAll({ where: { categoryId } });
     } else if (category.type === 'VIDEO') {
       products = await Video.findAll({ where: { categoryId } });
     } else if (category.type === 'PDF') {
       products = await Book.findAll({ where: { categoryId } });
+    } else {
+      // Fallback: try to find in AfricanStory if name match fails but type might be unique?
+      // For now stick to name matching for specific custom types
     }
 
     res.status(200).json({ category, products });
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Failed to fetch products" });
+  }
+};
+
+exports.getProductDetails = async (req, res) => {
+  const { categoryId, productId } = req.params;
+  try {
+    const category = await Category.findByPk(categoryId);
+    if (!category) return res.status(404).json({ message: "Category not found" });
+
+    let product = null;
+
+    if (category.name.includes("Albums")) {
+      product = await Album.findByPk(productId);
+    } else if (category.name.includes("African")) {
+      product = await AfricanStory.findByPk(productId);
+    } else if (category.type === 'VIDEO') {
+      product = await Video.findByPk(productId);
+    } else if (category.type === 'PDF') {
+      product = await Book.findByPk(productId);
+    }
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json({ category, product });
+  } catch (error) {
+    console.error("Error fetching product details:", error);
+    res.status(500).json({ message: "Failed to fetch product details" });
   }
 };

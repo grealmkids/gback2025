@@ -9,6 +9,7 @@ const {
   downloadFile,
   getCategories,
   getProductsByCategory,
+  getProductDetails,
 } = require("../controllers/clientController");
 const Album = require("../models/album");
 const ClientAlbum = require("../models/clientAlbum");
@@ -72,5 +73,6 @@ router.post("/create-user", createUserIfNotExists);
 // Dynamic Products Routes
 router.get("/categories", getCategories);
 router.get("/products/:categoryId", getProductsByCategory); // Fetch products by category ID
+router.get("/products/:categoryId/details/:productId", getProductDetails); // Fetch specific product details
 
 module.exports = router;
