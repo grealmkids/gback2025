@@ -1,3 +1,4 @@
+require('dotenv').config();
 const sequelize = require('./config/database');
 const BillingAddress = require('./models/billingAddress');
 
