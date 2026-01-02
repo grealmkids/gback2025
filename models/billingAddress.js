@@ -25,6 +25,7 @@ const BillingAddress = sequelize.define(
     email_address: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true, // Enforce uniqueness
       validate: {
         isEmail: true,
       },
@@ -32,6 +33,7 @@ const BillingAddress = sequelize.define(
     phone_number: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true, // Enforce uniqueness
     },
     country_code: {
       type: DataTypes.STRING,

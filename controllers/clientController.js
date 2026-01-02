@@ -166,7 +166,10 @@ exports.saveBillingAddress = async (req, res) => {
 
     // Handle Unique Constraint Error (e.g. Phone number already exists)
     if (error.name === 'SequelizeUniqueConstraintError') {
-      const field = error.errors[0]?.path === 'phone' ? 'Phone number' : error.errors[0]?.path;
+      let field = error.errors[0]?.path;
+      if (field === 'phone' || field === 'phone_number') field = 'Phone number';
+      if (field === 'email' || field === 'email_address') field = 'Email address';
+
       return res.status(409).json({
         message: `${field} already exists. Please use a different one or contact support.`,
         errorType: error.name

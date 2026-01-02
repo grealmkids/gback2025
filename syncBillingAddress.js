@@ -6,7 +6,7 @@ const syncTable = async () => {
     try {
         await sequelize.authenticate();
         console.log('Database connected.');
-        await BillingAddress.sync(); // Creates the table if it doesn't exist
+        await BillingAddress.sync({ alter: true }); // Updates the table schema to include unique constraints
         console.log('BillingAddress table synced successfully.');
     } catch (error) {
         console.error('Error syncing table:', error);
