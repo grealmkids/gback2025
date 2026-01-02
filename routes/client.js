@@ -10,6 +10,7 @@ const {
   getCategories,
   getProductsByCategory,
   getProductDetails,
+  getHomepageServices
 } = require("../controllers/clientController");
 const Album = require("../models/album");
 const ClientAlbum = require("../models/clientAlbum");
@@ -74,5 +75,6 @@ router.post("/create-user", createUserIfNotExists);
 router.get("/categories", getCategories);
 router.get("/products/:categoryId", getProductsByCategory); // Fetch products by category ID
 router.get("/products/:categoryId/details/:productId", getProductDetails); // Fetch specific product details
+router.get("/services", getHomepageServices);
 
 module.exports = router;

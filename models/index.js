@@ -7,6 +7,7 @@ const Category = require("./category");
 const Video = require("./video");
 const Book = require("./book");
 const AfricanStory = require("./africanStory");
+const HomepageService = require("./HomepageService");
 
 // Define associations
 ClientAlbum.belongsTo(Album, { foreignKey: "albumId" });
@@ -39,5 +40,7 @@ module.exports = {
     Category,
     Video,
     Book,
-    AfricanStory
+    Book,
+    AfricanStory,
+    HomepageService
 };

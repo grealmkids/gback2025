@@ -6,7 +6,8 @@ const {
   Category,
   Video,
   Book,
-  AfricanStory
+  AfricanStory,
+  HomepageService
 } = require("../models");
 
 // Update the attributes to include 'downloadUrl' (renamed to 'downloadLink' in the response)
@@ -374,5 +375,14 @@ exports.getProductDetails = async (req, res) => {
   } catch (error) {
     console.error("Error fetching product details:", error);
     res.status(500).json({ message: "Failed to fetch product details" });
+  }
+};
+exports.getHomepageServices = async (req, res) => {
+  try {
+    const services = await HomepageService.findAll({ order: [['displayOrder', 'ASC']] });
+    res.status(200).json(services);
+  } catch (error) {
+    console.error("Error fetching homepage services:", error);
+    res.status(500).json({ message: "Failed to fetch homepage services" });
   }
 };
