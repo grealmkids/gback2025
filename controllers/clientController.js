@@ -18,7 +18,7 @@ exports.viewPurchasedAlbums = async (req, res) => {
       include: [
         {
           model: Album,
-          attributes: ["title", ["downloadUrl", "downloadLink"]],
+          // attributes: ["title", ["downloadUrl", "downloadLink"]], // Fetches all attributes now for details modal
         },
       ],
     });
