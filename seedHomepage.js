@@ -95,7 +95,7 @@ async function seedHomepageData() {
                 {
                     icon: 'fa-camera',
                     cardClass: 'card-green',
-                    text: 'Cutting-edge Filmmaking and AI technology education.',
+                    text: 'Cutting-edge Filmmaking and Movie Production.',
                     displayOrder: 2
                 },
                 {
