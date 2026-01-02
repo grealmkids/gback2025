@@ -53,6 +53,10 @@ const Album = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    downloadZip: {
+      type: DataTypes.STRING, // URL for folder zip download
+      allowNull: true,
+    },
     previewvideo: {
       type: DataTypes.STRING,
       allowNull: true,
