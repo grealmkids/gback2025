@@ -1,0 +1,17 @@
+const sequelize = require('./config/database');
+const BillingAddress = require('./models/billingAddress');
+
+const syncTable = async () => {
+    try {
+        await sequelize.authenticate();
+        console.log('Database connected.');
+        await BillingAddress.sync(); // Creates the table if it doesn't exist
+        console.log('BillingAddress table synced successfully.');
+    } catch (error) {
+        console.error('Error syncing table:', error);
+    } finally {
+        await sequelize.close();
+    }
+};
+
+syncTable();

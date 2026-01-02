@@ -159,11 +159,19 @@ exports.saveBillingAddress = async (req, res) => {
     console.error("=== ERROR SAVING BILLING ADDRESS ===");
     console.error("Error name:", error.name);
     console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
     if (error.original) {
       console.error("Original error:", error.original);
     }
     console.error("=== END ERROR ===");
+
+    // Handle Unique Constraint Error (e.g. Phone number already exists)
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const field = error.errors[0]?.path === 'phone' ? 'Phone number' : error.errors[0]?.path;
+      return res.status(409).json({
+        message: `${field} already exists. Please use a different one or contact support.`,
+        errorType: error.name
+      });
+    }
 
     res.status(500).json({
       message: "Failed to save billing address",
