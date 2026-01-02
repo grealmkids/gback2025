@@ -43,6 +43,12 @@ exports.getAllAlbums = async (req, res) => {
       where,
       attributes: { exclude: ["downloadUrl"] },
     });
+    console.log(`=== FETCHED ALBUMS (${albums.length}) ===`);
+    if (albums.length > 0) {
+      console.log(JSON.stringify(albums, null, 2));
+    } else {
+      console.log('No albums found in database.');
+    }
     res.status(200).json(albums);
   } catch (error) {
     console.error("Error fetching albums:", error);
