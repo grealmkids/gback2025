@@ -77,7 +77,7 @@ router.get("/categories", getCategories);
 router.get("/products/:categoryId", getProductsByCategory); // Fetch products by category ID
 router.get("/products/:categoryId/details/:productId", getProductDetails); // Fetch specific product details
 // Homepage
-router.get('/homepage-services', getHomepageServices);
+router.get('/services', getHomepageServices);
 
 // Proxy PDF (Bypass CORS)
 router.get('/proxy-pdf', proxyPdf);
