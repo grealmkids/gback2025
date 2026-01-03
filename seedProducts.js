@@ -26,84 +26,101 @@ const seedProducts = async () => {
         // 2. Add Dummy Movie
         if (moviesCat) {
             console.log("Seeding Movies...");
-            await Video.findOrCreate({
-                where: { title: "Babu & the Goose" },
-                defaults: {
-                    title: "Babu & the Goose",
-                    description: "A funny movie about a goose.",
-                    price: 15000,
-                    categoryId: moviesCat.id,
-                    thumbnail: "assets/babu_goose.jpg" // Placeholder
-                }
+            const movieData = {
+                title: "Babu & the Goose",
+                description: "A funny movie about a goose.",
+                price: 15000,
+                categoryId: moviesCat.id,
+                thumbnail: "/assets/babu_goose.jpg"
+            };
+            const [movie, created] = await Video.findOrCreate({
+                where: { title: movieData.title },
+                defaults: movieData
             });
+            if (!created) await movie.update(movieData);
         }
 
         // 3. Add Dummy Book
         if (storyBooksCat) {
             console.log("Seeding Books...");
-            await Book.findOrCreate({
-                where: { title: "The Wise Tortoise" },
-                defaults: {
-                    title: "The Wise Tortoise",
-                    description: "An classic African fable.",
-                    price: 5000,
-                    categoryId: storyBooksCat.id,
-                    coverImage: "assets/tortoise_book.jpg" // Placeholder
-                }
+            const bookData = {
+                title: "The Wise Tortoise",
+                description: "An classic African fable.",
+                price: 5000,
+                categoryId: storyBooksCat.id,
+                coverImage: "/assets/tortoise_book.jpg",
+                fileUrl: "https://grealm.org/assets/docs/business-services.pdf"
+            };
+            const [book, created] = await Book.findOrCreate({
+                where: { title: bookData.title },
+                defaults: bookData
             });
+            if (!created) await book.update(bookData);
         }
 
-        // 4. Add Dummy African Story
+        // 4. Add or Update Dummy African Story
         if (africanStoriesCat) {
             console.log("Seeding African Stories...");
-            await AfricanStory.findOrCreate({
-                where: { title: "The Lion and the Hare" },
-                defaults: {
-                    title: "The Lion and the Hare",
-                    description: "A classic tale of wit and strength.",
-                    price: 20000,
-                    categoryId: africanStoriesCat.id,
-                    thumbnail: "assets/lion_hare_thumb.jpg",
-                    videoUrl: "assets/lion_hare.mp4",
-                    storyBookUrl: "assets/lion_hare_story.pdf",
-                    coloringBookUrl: "assets/lion_hare_coloring.pdf",
-                    flashcardsUrl: "assets/lion_hare_cards.pdf"
-                }
+            const storyData = {
+                title: "The Lion and the Hare",
+                description: "A classic tale of wit and strength.",
+                price: 20000,
+                categoryId: africanStoriesCat.id,
+                thumbnail: "/assets/lion_hare_thumb.jpg",
+                videoUrl: "/assets/lion_hare.mp4",
+                storyBookUrl: "https://grealm.org/assets/docs/business-services.pdf",
+                coloringBookUrl: "https://grealm.org/assets/docs/business-services.pdf",
+                flashcardsUrl: "https://grealm.org/assets/docs/business-services.pdf"
+            };
+
+            const [story, created] = await AfricanStory.findOrCreate({
+                where: { title: storyData.title },
+                defaults: storyData
             });
+
+            if (!created) {
+                await story.update(storyData);
+            }
         }
 
-        // 5. Add Dummy Memory Verse
+        // 5. Add or Update Dummy Memory Verse
         const memoryVersesCat = await Category.findOne({ where: { name: "Memory Verses" } });
         if (memoryVersesCat) {
             console.log("Seeding Memory Verses...");
-            await Video.findOrCreate({
-                where: { title: "John 3:16" },
-                defaults: {
-                    title: "John 3:16",
-                    description: "For God so loved the world...",
-                    price: 0,
-                    categoryId: memoryVersesCat.id,
-                    thumbnail: "assets/john316.jpg",
-                    fileUrl: "assets/john316.mp4"
-                }
+            const verseData = {
+                title: "John 3:16",
+                description: "For God so loved the world...",
+                price: 0,
+                categoryId: memoryVersesCat.id,
+                thumbnail: "/assets/john316.jpg",
+                fileUrl: "/assets/john316.mp4"
+            };
+
+            const [verse, created] = await Video.findOrCreate({
+                where: { title: verseData.title },
+                defaults: verseData
             });
+            if (!created) await verse.update(verseData);
         }
 
-        // 6. Add Dummy Coloring Book
+        // 6. Add or Update Dummy Coloring Book
         const coloringCat = await Category.findOne({ where: { name: "Coloring Books" } });
         if (coloringCat) {
             console.log("Seeding Coloring Books...");
-            await Book.findOrCreate({
-                where: { title: "Animals of the Bible" },
-                defaults: {
-                    title: "Animals of the Bible",
-                    description: "Color your favorite animals.",
-                    price: 3000,
-                    categoryId: coloringCat.id,
-                    coverImage: "assets/animals_coloring.jpg",
-                    fileUrl: "assets/animals_coloring.pdf"
-                }
+            const bookData = {
+                title: "Animals of the Bible",
+                description: "Color your favorite animals.",
+                price: 3000,
+                categoryId: coloringCat.id,
+                coverImage: "/assets/animals_coloring.jpg",
+                fileUrl: "https://grealm.org/assets/docs/business-services.pdf"
+            };
+
+            const [book, created] = await Book.findOrCreate({
+                where: { title: bookData.title },
+                defaults: bookData
             });
+            if (!created) await book.update(bookData);
         }
 
         console.log("Products seeded successfully.");

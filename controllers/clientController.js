@@ -386,3 +386,30 @@ exports.getHomepageServices = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch homepage services" });
   }
 };
+
+exports.proxyPdf = async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).send('URL is required');
+  }
+
+  const https = require('https');
+  const http = require('http');
+
+  const client = url.startsWith('https') ? https : http;
+
+  client.get(url, (proxyRes) => {
+    if (proxyRes.statusCode !== 200) {
+      return res.status(proxyRes.statusCode).send('Failed to fetch remote file');
+    }
+
+    // Forward relevant headers
+    res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'application/pdf');
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow frontend to read this
+
+    proxyRes.pipe(res);
+  }).on('error', (err) => {
+    console.error('Proxy Error:', err);
+    res.status(500).send('Error fetching file');
+  });
+};
