@@ -30,6 +30,8 @@ const HomepageProduction = sequelize.define('HomepageProduction', {
         type: DataTypes.INTEGER,
         defaultValue: 0
     }
+}, {
+    tableName: 'homepageproductions'
 });
 
 module.exports = HomepageProduction;

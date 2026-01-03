@@ -18,6 +18,8 @@ const HomepageService = sequelize.define('HomepageService', {
         type: DataTypes.INTEGER,
         defaultValue: 0
     }
+}, {
+    tableName: 'homepageservices'
 });
 
 module.exports = HomepageService;
