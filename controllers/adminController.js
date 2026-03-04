@@ -1,7 +1,33 @@
-const User = require("../models/user");
-const Album = require("../models/album");
-const PurchasedItem = require("../models/PurchasedItem");
+const {
+  User,
+  Album,
+  Video,
+  Book,
+  AfricanStory,
+  Category,
+  PurchasedItem,
+} = require("../models");
 const { body, validationResult } = require("express-validator");
+const { uploadToB2 } = require("../utils/b2Upload");
+
+const getModelByCategoryType = (type) => {
+  switch (type) {
+    case "COLLECTION":
+    case "AUDIO":
+      return Album;
+    case "VIDEO MP4":
+    case "VIDEO":
+      return Video;
+    case "PDF":
+    case "BOOK":
+      return Book;
+    case "STORY":
+    case "AFRICAN STORY":
+      return AfricanStory;
+    default:
+      return null;
+  }
+};
 
 // Add new client
 exports.addClient = async (req, res) => {
@@ -108,5 +134,168 @@ exports.deleteAlbum = async (req, res) => {
   } catch (error) {
     console.error("Error deleting album:", error);
     res.status(500).json({ message: "Failed to delete album", error });
+  }
+};
+
+// --- NEW UNIFIED PRODUCT CRUD WITH B2 UPLOADS ---
+
+// Get all products (paginated or combined) for Admin Dashboard
+exports.getAllProducts = async (req, res) => {
+  try {
+    const albums = await Album.findAll({ include: [Category] });
+    const videos = await Video.findAll({ include: [Category] });
+    const books = await Book.findAll({ include: [Category] });
+    const stories = await AfricanStory.findAll({ include: [Category] });
+
+    res.status(200).json({ albums, videos, books, stories });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching products", error });
+  }
+};
+
+// Create Product with Upload
+exports.createProduct = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      price,
+      categoryId,
+      songs, video, audio, coloringPics, coloredPics, ugx, usd, status, youtubeUrl
+    } = req.body;
+    const files = req.files; // Expected to come from multer fields
+
+    if (!categoryId) {
+      return res.status(400).json({ message: "Category ID is required" });
+    }
+
+    const category = await Category.findByPk(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    const Model = getModelByCategoryType(category.type?.toUpperCase() || "");
+    if (!Model) {
+      return res.status(400).json({ message: "Invalid category type for product creation" });
+    }
+
+    let thumbnailUrl = null;
+    let fileUrls = {};
+
+    // Handle Image/Thumbnail
+    if (files?.thumbnail?.[0]) {
+      thumbnailUrl = await uploadToB2(
+        files.thumbnail[0].buffer,
+        files.thumbnail[0].originalname,
+        "thumbnails"
+      );
+    }
+
+    // Handle other specific files depending on type
+    if (files?.mainFile?.[0]) {
+      const fileUrl = await uploadToB2(
+        files.mainFile[0].buffer,
+        files.mainFile[0].originalname,
+        category.type?.toLowerCase().replace(" ", "_") || "products"
+      );
+
+      // Assign to the correct field based on model
+      if (Model === Video) {
+        fileUrls.videoUrl = fileUrl;
+      } else if (Model === Book) {
+        fileUrls.pdfUrl = fileUrl; // assuming book has pdfUrl
+      } else if (Model === AfricanStory) {
+        // Story could have storyBookUrl, coloringBookUrl, etc. We'll map mainFile to storyBookUrl for simplicity if needed,
+        // or support multiple specific fields in multer (e.g. req.files.storyBookUrl)
+        fileUrls.storyBookUrl = fileUrl;
+      }
+    }
+
+    // Extra fields for AfricanStory if provided
+    if (files?.videoFile?.[0] && Model === AfricanStory) {
+      fileUrls.videoUrl = await uploadToB2(
+        files.videoFile[0].buffer,
+        files.videoFile[0].originalname,
+        "story_videos"
+      );
+    }
+    if (files?.coloringBookFile?.[0] && Model === AfricanStory) {
+      fileUrls.coloringBookUrl = await uploadToB2(
+        files.coloringBookFile[0].buffer,
+        files.coloringBookFile[0].originalname,
+        "story_coloring_books"
+      );
+    }
+    if (files?.flashcardsFile?.[0] && Model === AfricanStory) {
+      fileUrls.flashcardsUrl = await uploadToB2(
+        files.flashcardsFile[0].buffer,
+        files.flashcardsFile[0].originalname,
+        "story_flashcards"
+      );
+    }
+
+    // Base product data
+    const productData = {
+      title,
+      description,
+      categoryId,
+      thumbnail: thumbnailUrl,
+      ...fileUrls,
+    };
+
+    if (Model === Album) {
+      productData.songs = songs || 0;
+      productData.video = video || 0;
+      productData.audio = audio || 0;
+      productData.coloringPics = coloringPics || 0;
+      productData.coloredPics = coloredPics || 0;
+      productData.ugx = ugx || 'UGX 0';
+      productData.usd = usd || 0;
+      productData.status = status || 'completed';
+      productData.youtubeUrl = youtubeUrl || null;
+      // Provide dummy contents json
+      productData.contents = { "info": "migrated from generic form" };
+      productData.image = thumbnailUrl || 'placeholder.jpg'; // Required field in Album
+    } else {
+      productData.price = price || 0;
+      if (Model === Book) {
+        productData.coverImage = thumbnailUrl;
+        productData.fileUrl = fileUrls.pdfUrl;
+      }
+      if (Model === Video) {
+        productData.fileUrl = fileUrls.videoUrl;
+      }
+    }
+
+    // Merge and save
+    const newProduct = await Model.create(productData);
+
+    res.status(201).json({ message: "Product created successfully", product: newProduct });
+  } catch (error) {
+    console.error("Error creating product:", error);
+    res.status(500).json({ message: "Error creating product", error });
+  }
+};
+
+// Delete product based on category type
+exports.deleteUnifiedProduct = async (req, res) => {
+  try {
+    const { id, type } = req.params;
+
+    const Model = getModelByCategoryType(type.toUpperCase());
+    if (!Model) {
+      return res.status(400).json({ message: "Invalid product type" });
+    }
+
+    const deleted = await Model.destroy({ where: { id } });
+    if (deleted) {
+      res.status(200).json({ message: "Product deleted successfully" });
+    } else {
+      res.status(404).json({ message: "Product not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    res.status(500).json({ message: "Error deleting product", error });
   }
 };

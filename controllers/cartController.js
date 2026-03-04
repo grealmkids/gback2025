@@ -47,7 +47,8 @@ exports.addToCart = async (req, res) => {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        const price = product.price || product.ugx || 0;
+        const rawPrice = product.price || product.ugx || 0;
+        const price = typeof rawPrice === 'string' ? parseFloat(rawPrice.replace(/,/g, '')) : rawPrice;
         const title = product.title || "Unknown Product";
         const coverImage = product.thumbnail || product.coverImage || product.image || "";
 

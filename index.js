@@ -44,6 +44,7 @@ app.use(express.json());
 
 const authRoutes = require("./routes/auth");
 const clientRoutes = require("./routes/client");
+const adminRoutes = require("./routes/adminRoutes");
 
 // Logging middleware to track incoming requests
 app.use((req, res, next) => {
@@ -56,6 +57,9 @@ app.use("/api/auth", authRoutes);
 
 // Mount client routes
 app.use("/api/client", clientRoutes);
+
+// Mount admin routes
+app.use("/api/admin", adminRoutes);
 
 // Mount homepage routes
 app.use("/api/homepage", require("./routes/homepage"));
