@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { sequelize, Cart, CartItem, Transaction } = require("./models");
+const { sequelize, Cart, CartItem, Transaction, PurchasedItem } = require("./models");
 
 async function syncNewModels() {
     try {
@@ -14,6 +14,9 @@ async function syncNewModels() {
 
         await Transaction.sync({ alter: true });
         console.log("Transaction synced");
+
+        await PurchasedItem.sync({ alter: true });
+        console.log("PurchasedItem synced");
 
         console.log("All new models synced successfully!");
     } catch (err) {

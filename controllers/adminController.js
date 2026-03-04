@@ -1,6 +1,6 @@
 const User = require("../models/user");
 const Album = require("../models/album");
-const ClientAlbum = require("../models/clientAlbum");
+const PurchasedItem = require("../models/PurchasedItem");
 const { body, validationResult } = require("express-validator");
 
 // Add new client
@@ -26,7 +26,13 @@ exports.addClient = async (req, res) => {
       return res.status(404).json({ message: "Album not found" });
     }
 
-    await ClientAlbum.create({ userId: client.id, albumId: album.id });
+    await PurchasedItem.create({
+      userId: client.id,
+      productId: album.id,
+      productType: 'Albums',
+      paymentStatus: 'COMPLETED',
+      paymentReference: 'ADMIN_GRANT'
+    });
     res.status(201).json({ message: "Client added successfully" });
   } catch (error) {
     console.error("Error in addClient:", error);

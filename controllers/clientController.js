@@ -1,6 +1,6 @@
 const {
   User,
-  ClientAlbum,
+  PurchasedItem,
   Album,
   BillingAddress,
   Category,
@@ -10,7 +10,7 @@ const {
   HomepageService
 } = require("../models");
 
-// Update the attributes to include 'downloadUrl' (renamed to 'downloadLink' in the response)
+// View universal purchased items with dynamic population
 exports.viewPurchasedAlbums = async (req, res) => {
   const { clientId } = req.query;
 
@@ -21,17 +21,36 @@ exports.viewPurchasedAlbums = async (req, res) => {
   }
 
   try {
-    const purchasedAlbums = await ClientAlbum.findAll({
-      where: { userId: clientId },
-      include: [
-        {
-          model: Album,
-          // attributes: ["title", ["downloadUrl", "downloadLink"]], // Fetches all attributes now for details modal
-        },
-      ],
+    const purchased = await PurchasedItem.findAll({
+      where: { userId: clientId, paymentStatus: 'COMPLETED' },
     });
 
-    res.json(purchasedAlbums);
+    // Populate actual product data depending on productType
+    const populatedItems = await Promise.all(purchased.map(async (item) => {
+      let productDetails = null;
+
+      try {
+        if (item.productType === 'Albums' || item.productType === 'album') {
+          productDetails = await Album.findByPk(item.productId);
+        } else if (item.productType === 'PDF' || item.productType === 'book') {
+          productDetails = await Book.findByPk(item.productId);
+        } else if (item.productType === 'VIDEO' || item.productType === 'video') {
+          productDetails = await Video.findByPk(item.productId);
+        } else if (item.productType === 'AfricanStories' || item.productType === 'african_story') {
+          productDetails = await AfricanStory.findByPk(item.productId);
+        }
+      } catch (err) {
+        console.error("Error fetching product details for item id: " + item.id);
+      }
+
+      // We attach the resolved details onto a standard property "ProductDetails"
+      return {
+        ...item.toJSON(),
+        ProductDetails: productDetails ? productDetails.toJSON() : null
+      };
+    }));
+
+    res.json(populatedItems);
   } catch (error) {
     console.error("Error in viewPurchasedAlbums:", error);
     res.status(500).json({ message: "Server error", error });

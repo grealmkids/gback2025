@@ -1,6 +1,6 @@
 const sequelize = require("../config/database");
 const Album = require("./album");
-const ClientAlbum = require("./clientAlbum");
+const PurchasedItem = require("./PurchasedItem");
 const User = require("./user");
 const BillingAddress = require("./billingAddress");
 const Category = require("./category");
@@ -12,12 +12,9 @@ const Cart = require("./Cart");
 const CartItem = require("./CartItem");
 const Transaction = require("./Transaction");
 
-// Define associations
-ClientAlbum.belongsTo(Album, { foreignKey: "albumId" });
-Album.hasMany(ClientAlbum, { foreignKey: "albumId" });
-
-ClientAlbum.belongsTo(User, { foreignKey: "userId" });
-User.hasMany(ClientAlbum, { foreignKey: "userId" });
+// Define Universal Purchase associations
+PurchasedItem.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(PurchasedItem, { foreignKey: "userId" });
 
 // Category Associations
 Category.hasMany(Album, { foreignKey: "categoryId" });
@@ -48,7 +45,7 @@ Transaction.belongsTo(User, { foreignKey: "userId" });
 module.exports = {
     sequelize,
     Album,
-    ClientAlbum,
+    PurchasedItem,
     User,
     BillingAddress,
     Category,

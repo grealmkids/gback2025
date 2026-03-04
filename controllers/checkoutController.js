@@ -1,4 +1,4 @@
-const { Transaction, Cart, CartItem, BillingAddress, User } = require("../models");
+const { Transaction, Cart, CartItem, BillingAddress, User, PurchasedItem } = require("../models");
 const PesapalService = require("../utils/pesapal");
 
 exports.initiateCheckout = async (req, res) => {
@@ -51,12 +51,15 @@ exports.initiateCheckout = async (req, res) => {
         // Generate Custom Reference
         const merchantReference = `GREALM-${Date.now()}-${userId}-${Math.floor(Math.random() * 1000)}`;
 
+        const clientName = `${billingAddress.first_name || 'User'} ${billingAddress.last_name || ''}`.trim();
+        const itemTitles = itemsSnapshot.map(item => item.title).join(', ');
+
         // 4. Submit to Pesapal
         const orderData = {
             id: merchantReference,
             school_id: 1, // Optional: if using generic payload from bigezolite
             amount: amount,
-            description: "Grealm Studio Checkout",
+            description: `Grealm Studio_${clientName}_${itemTitles}`,
             billing_address: billingAddress,
         };
 
@@ -124,7 +127,23 @@ exports.verifyPaymentStatus = async (req, res) => {
                 if (cart) {
                     await CartItem.destroy({ where: { cartId: cart.id } });
                 }
-                // TODO: We could insert rows into ClientAlbum here!
+
+                // Grant access to purchased items by inserting into PurchasedItem table
+                if (transaction.itemsSnapshot && Array.isArray(transaction.itemsSnapshot)) {
+                    for (const item of transaction.itemsSnapshot) {
+                        try {
+                            await PurchasedItem.create({
+                                userId: transaction.userId,
+                                productId: item.productId,
+                                productType: item.productType || 'Albums', // Default gracefully
+                                paymentStatus: 'COMPLETED',
+                                paymentReference: transaction.orderTrackingId
+                            });
+                        } catch (insertError) {
+                            console.error("[PurchasedItem Insert Error]", insertError);
+                        }
+                    }
+                }
             }
 
             return res.status(200).json({

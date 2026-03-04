@@ -14,7 +14,7 @@ const {
   proxyPdf
 } = require("../controllers/clientController");
 const Album = require("../models/album");
-const ClientAlbum = require("../models/clientAlbum");
+const PurchasedItem = require("../models/PurchasedItem");
 
 // View purchased albums
 router.get("/purchased-albums", viewPurchasedAlbums);
@@ -53,15 +53,21 @@ router.post("/insert-client-album", async (req, res) => {
   }
 
   try {
-    await ClientAlbum.create({ userId, albumId });
+    await PurchasedItem.create({
+      userId,
+      productId: albumId,
+      productType: 'Albums',
+      paymentStatus: 'COMPLETED',
+      paymentReference: 'MANUAL_INSERT'
+    });
     res
       .status(201)
-      .json({ message: "Client album row inserted successfully." });
+      .json({ message: "Purchased item row inserted successfully." });
   } catch (error) {
-    console.error("Error inserting client album row:", error);
+    console.error("Error inserting purchased item:", error);
     res
       .status(500)
-      .json({ message: "Failed to insert client album row.", error });
+      .json({ message: "Failed to insert purchased item.", error });
   }
 });
 
