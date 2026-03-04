@@ -299,3 +299,128 @@ exports.deleteUnifiedProduct = async (req, res) => {
     res.status(500).json({ message: "Error deleting product", error });
   }
 };
+
+// Get single unified product
+exports.getUnifiedProduct = async (req, res) => {
+  try {
+    const { id, type } = req.params;
+
+    const Model = getModelByCategoryType(type.toUpperCase());
+    if (!Model) {
+      return res.status(400).json({ message: "Invalid product type" });
+    }
+
+    const product = await Model.findByPk(id, { include: [Category] });
+    if (product) {
+      res.status(200).json(product);
+    } else {
+      res.status(404).json({ message: "Product not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Error fetching product", error });
+  }
+};
+
+// Update unified product
+exports.updateUnifiedProduct = async (req, res) => {
+  try {
+    const { id, type } = req.params;
+    const {
+      title,
+      description,
+      price,
+      categoryId,
+      songs, video, audio, coloringPics, coloredPics, ugx, usd, status, youtubeUrl
+    } = req.body;
+    const files = req.files; // Expected to come from multer fields
+
+    const Model = getModelByCategoryType(type.toUpperCase());
+    if (!Model) {
+      return res.status(400).json({ message: "Invalid product type" });
+    }
+
+    const product = await Model.findByPk(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const category = await Category.findByPk(categoryId || product.categoryId);
+
+    let fileUrls = {};
+    let thumbnailUrl = product.thumbnail;
+
+    // Handle Image/Thumbnail update
+    if (files?.thumbnail?.[0]) {
+      thumbnailUrl = await uploadToB2(
+        files.thumbnail[0].buffer,
+        files.thumbnail[0].originalname,
+        "thumbnails"
+      );
+    }
+
+    // Handle other specific files depending on type
+    if (files?.mainFile?.[0]) {
+      const fileUrl = await uploadToB2(
+        files.mainFile[0].buffer,
+        files.mainFile[0].originalname,
+        category.type?.toLowerCase().replace(" ", "_") || "products"
+      );
+
+      if (Model === Video) fileUrls.videoUrl = fileUrl;
+      else if (Model === Book) fileUrls.pdfUrl = fileUrl;
+      else if (Model === AfricanStory) fileUrls.storyBookUrl = fileUrl;
+    }
+
+    if (files?.videoFile?.[0] && Model === AfricanStory) {
+      fileUrls.videoUrl = await uploadToB2(
+        files.videoFile[0].buffer, files.videoFile[0].originalname, "story_videos"
+      );
+    }
+    if (files?.coloringBookFile?.[0] && Model === AfricanStory) {
+      fileUrls.coloringBookUrl = await uploadToB2(
+        files.coloringBookFile[0].buffer, files.coloringBookFile[0].originalname, "story_coloring_books"
+      );
+    }
+    if (files?.flashcardsFile?.[0] && Model === AfricanStory) {
+      fileUrls.flashcardsUrl = await uploadToB2(
+        files.flashcardsFile[0].buffer, files.flashcardsFile[0].originalname, "story_flashcards"
+      );
+    }
+
+    // Base product data update
+    const updateData = {
+      title: title || product.title,
+      description: description || product.description,
+      categoryId: categoryId || product.categoryId,
+      thumbnail: thumbnailUrl,
+      ...fileUrls,
+    };
+
+    if (Model === Album) {
+      updateData.songs = songs !== undefined ? songs : product.songs;
+      updateData.video = video !== undefined ? video : product.video;
+      updateData.audio = audio !== undefined ? audio : product.audio;
+      updateData.coloringPics = coloringPics !== undefined ? coloringPics : product.coloringPics;
+      updateData.coloredPics = coloredPics !== undefined ? coloredPics : product.coloredPics;
+      updateData.ugx = ugx !== undefined ? ugx : product.ugx;
+      updateData.usd = usd !== undefined ? usd : product.usd;
+      updateData.status = status !== undefined ? status : product.status;
+      updateData.youtubeUrl = youtubeUrl !== undefined ? youtubeUrl : product.youtubeUrl;
+      if (thumbnailUrl) updateData.image = thumbnailUrl;
+    } else {
+      updateData.price = price !== undefined ? price : product.price;
+      if (Model === Book && thumbnailUrl) updateData.coverImage = thumbnailUrl;
+      if (Model === Book && fileUrls.pdfUrl) updateData.fileUrl = fileUrls.pdfUrl;
+      if (Model === Video && fileUrls.videoUrl) updateData.fileUrl = fileUrls.videoUrl;
+    }
+
+    await Model.update(updateData, { where: { id } });
+    const updatedProduct = await Model.findByPk(id);
+
+    res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
+  } catch (error) {
+    console.error("Error updating product:", error);
+    res.status(500).json({ message: "Error updating product", error });
+  }
+};

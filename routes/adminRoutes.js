@@ -24,8 +24,24 @@ router.post(
     adminController.createProduct
 );
 
+// Get specific product
+router.get("/products/:type/:id", adminController.getUnifiedProduct);
+
 // Delete product
 router.delete("/products/:type/:id", adminController.deleteUnifiedProduct);
+
+// Update product
+router.put(
+    "/products/:type/:id",
+    upload.fields([
+        { name: "thumbnail", maxCount: 1 },
+        { name: "mainFile", maxCount: 1 },
+        { name: "videoFile", maxCount: 1 },
+        { name: "coloringBookFile", maxCount: 1 },
+        { name: "flashcardsFile", maxCount: 1 },
+    ]),
+    adminController.updateUnifiedProduct
+);
 
 // Expose router
 module.exports = router;
