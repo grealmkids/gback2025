@@ -1,0 +1,15 @@
+{
+  "id": 1,
+  "title": "The Lion and the Hare",
+  "description": "A classic tale of wit and strength.",
+  "price": "550.00",
+  "thumbnail": "/assets/domesticbirds.jpg",
+  "videoUrl": "https://academy.grealm.org/videos/2.mp4",
+  "storyBookUrl": "assets/docs/int-school-catalog.pdf",
+  "coloringBookUrl": "assets/docs/int-school-catalog.pdf",
+  "flashcardsUrl": "assets/docs/int-school-catalog.pdf",
+  "audioUrl": "https://academy.grealm.org/audios/2.mp3",
+  "categoryId": 2,
+  "createdAt": "2026-01-02T12:49:51.000Z",
+  "updatedAt": "2026-01-03T00:09:20.000Z"
+}
