@@ -72,14 +72,28 @@ router.get("/billing-address", getBillingAddress);
 // User management routes
 router.post("/create-user", createUserIfNotExists);
 
+const { getCart, addToCart, updateQuantity, removeFromCart } = require("../controllers/cartController");
+const { initiateCheckout, verifyPaymentStatus } = require("../controllers/checkoutController");
+
 // Dynamic Products Routes
 router.get("/categories", getCategories);
 router.get("/products/:categoryId", getProductsByCategory); // Fetch products by category ID
 router.get("/products/:categoryId/details/:productId", getProductDetails); // Fetch specific product details
+
 // Homepage
 router.get('/services', getHomepageServices);
 
 // Proxy PDF (Bypass CORS)
 router.get('/proxy-pdf', proxyPdf);
+
+// --- CART ROUTES ---
+router.get("/cart", getCart);
+router.post("/cart", addToCart);
+router.patch("/cart/:cartItemId", updateQuantity);
+router.delete("/cart/:cartItemId", removeFromCart);
+
+// --- CHECKOUT & PESAPAL ROUTES ---
+router.post("/checkout", initiateCheckout);
+router.get("/checkout/verify", verifyPaymentStatus);
 
 module.exports = router;
