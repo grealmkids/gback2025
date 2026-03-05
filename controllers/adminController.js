@@ -7,8 +7,11 @@ const {
   Category,
   PurchasedItem,
 } = require("../models");
+const sequelize = require("../config/database");
+const { DataTypes } = require("sequelize");
 const { body, validationResult } = require("express-validator");
 const { uploadToB2 } = require("../utils/b2Upload");
+const { generateAndSendOtp, validateOtp } = require("../utils/otpService");
 
 const getModelByCategoryType = (type) => {
   switch (type) {
@@ -422,5 +425,120 @@ exports.updateUnifiedProduct = async (req, res) => {
   } catch (error) {
     console.error("Error updating product:", error);
     res.status(500).json({ message: "Error updating product", error });
+  }
+};
+
+// --- DYNAMIC CATEGORY CREATION MODULE ---
+
+// Request an OTP sent to admin email
+exports.requestCategoryOtp = async (req, res) => {
+  try {
+    const adminEmail = process.env.ADMIN_ACCOUNT || "grealmkids@gmail.com";
+    await generateAndSendOtp(adminEmail);
+    res.status(200).json({ message: `Security OTP sent to ${adminEmail}` });
+  } catch (error) {
+    console.error("Failed to send OTP", error);
+    res.status(500).json({ message: "Failed to send OTP security email.", error: error.message });
+  }
+};
+
+// Map string datatype name (from frontend) to standard Sequelize literal Data Types
+const getSequelizeType = (typeString) => {
+  switch (typeString.toUpperCase()) {
+    case 'STRING': return DataTypes.STRING;
+    case 'TEXT': return DataTypes.TEXT;
+    case 'INTEGER': return DataTypes.INTEGER;
+    case 'DECIMAL': return DataTypes.DECIMAL;
+    case 'BOOLEAN': return DataTypes.BOOLEAN;
+    case 'DATE': return DataTypes.DATE;
+    default: return DataTypes.STRING;
+  }
+};
+
+// Verify OTP and generate exactly the requested MySQL DB Table layout dynamically
+exports.createDynamicCategory = async (req, res) => {
+  try {
+    const { otp, name, type, icon, displayOrder, customColumns } = req.body;
+
+    // 1. Validate OTP
+    const adminEmail = process.env.ADMIN_ACCOUNT || "grealmkids@gmail.com";
+    const isValid = validateOtp(adminEmail, otp);
+    if (!isValid) {
+      return res.status(401).json({ message: "Invalid or expired OTP." });
+    }
+
+    // 2. Build Schema for the new table
+    const safeTableName = type.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+    // Base Ecommerce Fields Required by the Frontend
+    const dynamicSchema = {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      title: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      price: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      thumbnail: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      categoryId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      }
+    };
+
+    // Inject Custom Columns mapped to Sequelize primitives
+    if (customColumns && Array.isArray(customColumns)) {
+      customColumns.forEach(col => {
+        // Sanitize column names so we don't allow SQL injection identifiers
+        const safeColName = col.columnName.trim().replace(/[^a-zA-Z0-9_]/g, '_');
+        if (safeColName && !dynamicSchema[safeColName]) {
+          dynamicSchema[safeColName] = {
+            type: getSequelizeType(col.dataType),
+            allowNull: true,
+          };
+        }
+      });
+    }
+
+    // 3. Command Sequelize to physically generate the new Table using the schema object
+    await sequelize.getQueryInterface().createTable(safeTableName, dynamicSchema);
+
+    // 4. Register the new Category into the UI Database Registry
+    const newCategory = await Category.create({
+      name,
+      type: type.toUpperCase(),
+      icon: icon || 'fa-box',
+      displayOrder: displayOrder || 99
+    });
+
+    res.status(201).json({
+      message: "Category and dynamic table created successfully!",
+      category: newCategory
+    });
+
+  } catch (error) {
+    console.error("Dynamic Table build error", error);
+    res.status(500).json({ message: "Failed to construct dynamic table", error: error.message });
   }
 };

@@ -43,5 +43,9 @@ router.put(
     adminController.updateUnifiedProduct
 );
 
+// Dynamic Categories
+router.post("/categories/request-otp", adminController.requestCategoryOtp);
+router.post("/categories/dynamic", adminController.createDynamicCategory);
+
 // Expose router
 module.exports = router;
