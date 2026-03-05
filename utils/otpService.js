@@ -6,12 +6,12 @@ const otpStore = new Map();
 
 // Configure the transporter using the credentials provided
 const transporter = nodemailer.createTransport({
-    host: "bigezo.com",
-    port: 465,
+    host: process.env.SMTP_HOST || "grealm.org",
+    port: parseInt(process.env.SMTP_PORT) || 465,
     secure: true, // Use SSL
     auth: {
-        user: "admin@grealm.org",
-        pass: "Realmofglory9@"
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
     }
 });
 
