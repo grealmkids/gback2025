@@ -150,7 +150,28 @@ exports.getAllProducts = async (req, res) => {
     const books = await Book.findAll({ include: [Category] });
     const stories = await AfricanStory.findAll({ include: [Category] });
 
-    res.status(200).json({ albums, videos, books, stories });
+    // Fetch from all dynamic categories
+    const allCategories = await Category.findAll();
+    const hardcodedTypes = ['COLLECTION', 'AUDIO', 'VIDEO MP4', 'VIDEO', 'PDF', 'BOOK', 'STORY', 'AFRICAN STORY'];
+    const dynamicCats = allCategories.filter(c => !hardcodedTypes.includes(c.type));
+
+    let dynamicProducts = [];
+    for (const cat of dynamicCats) {
+      const tableName = cat.type.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      try {
+        const [results] = await sequelize.query(`SELECT * FROM ${tableName}`);
+        // Attach .Category mapping for the frontend list
+        const rows = results.map(row => ({
+          ...row,
+          Category: cat
+        }));
+        dynamicProducts = dynamicProducts.concat(rows);
+      } catch (sqle) {
+        console.warn(`Table ${tableName} missing or format incorrect`, sqle.message);
+      }
+    }
+
+    res.status(200).json({ albums, videos, books, stories, dynamicProducts });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching products", error });
@@ -161,91 +182,54 @@ exports.getAllProducts = async (req, res) => {
 exports.createProduct = async (req, res) => {
   try {
     const {
-      title,
-      description,
-      price,
-      categoryId,
+      title, description, price, categoryId,
       songs, video, audio, coloringPics, coloredPics, ugx, usd, status, youtubeUrl
     } = req.body;
-    const files = req.files; // Expected to come from multer fields
+    const files = req.files;
 
-    if (!categoryId) {
-      return res.status(400).json({ message: "Category ID is required" });
-    }
+    if (!categoryId) return res.status(400).json({ message: "Category ID is required" });
 
     const category = await Category.findByPk(categoryId);
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" });
-    }
+    if (!category) return res.status(404).json({ message: "Category not found" });
 
-    const Model = getModelByCategoryType(category.type?.toUpperCase() || "");
-    if (!Model) {
-      return res.status(400).json({ message: "Invalid category type for product creation" });
-    }
-
-    let thumbnailUrl = null;
     let fileUrls = {};
-
-    // Handle Image/Thumbnail
-    if (files?.thumbnail?.[0]) {
-      thumbnailUrl = await uploadToB2(
-        files.thumbnail[0].buffer,
-        files.thumbnail[0].originalname,
-        "thumbnails"
-      );
-    }
-
-    // Handle other specific files depending on type
-    if (files?.mainFile?.[0]) {
-      const fileUrl = await uploadToB2(
-        files.mainFile[0].buffer,
-        files.mainFile[0].originalname,
-        category.type?.toLowerCase().replace(" ", "_") || "products"
-      );
-
-      // Assign to the correct field based on model
-      if (Model === Video) {
-        fileUrls.videoUrl = fileUrl;
-      } else if (Model === Book) {
-        fileUrls.pdfUrl = fileUrl; // assuming book has pdfUrl
-      } else if (Model === AfricanStory) {
-        // Story could have storyBookUrl, coloringBookUrl, etc. We'll map mainFile to storyBookUrl for simplicity if needed,
-        // or support multiple specific fields in multer (e.g. req.files.storyBookUrl)
-        fileUrls.storyBookUrl = fileUrl;
+    if (files) {
+      for (const key of Object.keys(files)) {
+        if (files[key] && files[key][0]) {
+          const folder = key === 'thumbnail' ? 'thumbnails' : (category.type?.toLowerCase().replace(" ", "_") || "products");
+          fileUrls[key] = await uploadToB2(files[key][0].buffer, files[key][0].originalname, folder);
+        }
       }
     }
 
-    // Extra fields for AfricanStory if provided
-    if (files?.videoFile?.[0] && Model === AfricanStory) {
-      fileUrls.videoUrl = await uploadToB2(
-        files.videoFile[0].buffer,
-        files.videoFile[0].originalname,
-        "story_videos"
-      );
-    }
-    if (files?.coloringBookFile?.[0] && Model === AfricanStory) {
-      fileUrls.coloringBookUrl = await uploadToB2(
-        files.coloringBookFile[0].buffer,
-        files.coloringBookFile[0].originalname,
-        "story_coloring_books"
-      );
-    }
-    if (files?.flashcardsFile?.[0] && Model === AfricanStory) {
-      fileUrls.flashcardsUrl = await uploadToB2(
-        files.flashcardsFile[0].buffer,
-        files.flashcardsFile[0].originalname,
-        "story_flashcards"
-      );
+    const Model = getModelByCategoryType(category.type?.toUpperCase() || "");
+    const baseData = { title, description, categoryId, thumbnail: fileUrls.thumbnail || null };
+
+    if (!Model) {
+      // DYNAMIC TABLE INSERTION
+      const tableName = category.type.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const dynamicData = { ...baseData, price: price || 0, ...fileUrls };
+      delete dynamicData.thumbnail; // to ensure it's not duplicated
+      dynamicData.thumbnail = fileUrls.thumbnail || null;
+      dynamicData.createdAt = new Date();
+      dynamicData.updatedAt = new Date();
+
+      const columns = Object.keys(dynamicData).join(', ');
+      const placeholders = Object.keys(dynamicData).map(() => '?').join(', ');
+      const values = Object.values(dynamicData);
+
+      const [insertResult] = await sequelize.query(`INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`, {
+        replacements: values
+      });
+      return res.status(201).json({ message: "Product created successfully in dynamic table", product: { id: insertResult, ...dynamicData } });
     }
 
-    // Base product data
-    const productData = {
-      title,
-      description,
-      categoryId,
-      thumbnail: thumbnailUrl,
-      ...fileUrls,
-    };
+    // HARDCODED MODEL INSERTION
+    if (Model === Video && fileUrls.mainFile) fileUrls.videoUrl = fileUrls.mainFile;
+    if (Model === Book && fileUrls.mainFile) fileUrls.pdfUrl = fileUrls.mainFile;
+    if (Model === AfricanStory && fileUrls.mainFile) fileUrls.storyBookUrl = fileUrls.mainFile;
+
+    const productData = { ...baseData, price: price || 0, ...fileUrls };
 
     if (Model === Album) {
       productData.songs = songs || 0;
@@ -257,13 +241,19 @@ exports.createProduct = async (req, res) => {
       productData.usd = usd || 0;
       productData.status = status || 'completed';
       productData.youtubeUrl = youtubeUrl || null;
-      // Provide dummy contents json
-      productData.contents = { "info": "migrated from generic form" };
-      productData.image = thumbnailUrl || 'placeholder.jpg'; // Required field in Album
+
+      let parsedContents = [];
+      try {
+        if (req.body.contents) {
+          parsedContents = JSON.parse(req.body.contents);
+        }
+      } catch (e) { console.error("Could not parse contents", e); }
+
+      productData.contents = parsedContents;
+      productData.image = fileUrls.thumbnail || 'placeholder.jpg';
     } else {
-      productData.price = price || 0;
       if (Model === Book) {
-        productData.coverImage = thumbnailUrl;
+        productData.coverImage = fileUrls.thumbnail;
         productData.fileUrl = fileUrls.pdfUrl;
       }
       if (Model === Video) {
@@ -271,9 +261,7 @@ exports.createProduct = async (req, res) => {
       }
     }
 
-    // Merge and save
     const newProduct = await Model.create(productData);
-
     res.status(201).json({ message: "Product created successfully", product: newProduct });
   } catch (error) {
     console.error("Error creating product:", error);
@@ -285,18 +273,18 @@ exports.createProduct = async (req, res) => {
 exports.deleteUnifiedProduct = async (req, res) => {
   try {
     const { id, type } = req.params;
-
     const Model = getModelByCategoryType(type.toUpperCase());
+
     if (!Model) {
-      return res.status(400).json({ message: "Invalid product type" });
+      // Dynamic Table Deletion
+      const tableName = type.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      await sequelize.query(`DELETE FROM ${tableName} WHERE id = ?`, { replacements: [id] });
+      return res.status(200).json({ message: "Product deleted successfully from dynamic table" });
     }
 
     const deleted = await Model.destroy({ where: { id } });
-    if (deleted) {
-      res.status(200).json({ message: "Product deleted successfully" });
-    } else {
-      res.status(404).json({ message: "Product not found" });
-    }
+    if (deleted) res.status(200).json({ message: "Product deleted successfully" });
+    else res.status(404).json({ message: "Product not found" });
   } catch (error) {
     console.error("Error deleting product:", error);
     res.status(500).json({ message: "Error deleting product", error });
@@ -307,18 +295,25 @@ exports.deleteUnifiedProduct = async (req, res) => {
 exports.getUnifiedProduct = async (req, res) => {
   try {
     const { id, type } = req.params;
-
     const Model = getModelByCategoryType(type.toUpperCase());
+
     if (!Model) {
-      return res.status(400).json({ message: "Invalid product type" });
+      // Dynamic Table Selection
+      const tableName = type.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const [results] = await sequelize.query(`SELECT * FROM ${tableName} WHERE id = ? LIMIT 1`, { replacements: [id] });
+      if (results.length > 0) {
+        const product = results[0];
+        const category = await Category.findOne({ where: { type: type.toUpperCase() } });
+        product.Category = category;
+        return res.status(200).json(product);
+      } else {
+        return res.status(404).json({ message: "Product not found" });
+      }
     }
 
     const product = await Model.findByPk(id, { include: [Category] });
-    if (product) {
-      res.status(200).json(product);
-    } else {
-      res.status(404).json({ message: "Product not found" });
-    }
+    if (product) res.status(200).json(product);
+    else res.status(404).json({ message: "Product not found" });
   } catch (error) {
     console.error("Error fetching product:", error);
     res.status(500).json({ message: "Error fetching product", error });
@@ -330,75 +325,58 @@ exports.updateUnifiedProduct = async (req, res) => {
   try {
     const { id, type } = req.params;
     const {
-      title,
-      description,
-      price,
-      categoryId,
+      title, description, price, categoryId,
       songs, video, audio, coloringPics, coloredPics, ugx, usd, status, youtubeUrl
     } = req.body;
-    const files = req.files; // Expected to come from multer fields
+    const files = req.files;
+
+    const category = categoryId ? await Category.findByPk(categoryId) : null;
+    let fileUrls = {};
+    if (files) {
+      for (const key of Object.keys(files)) {
+        if (files[key] && files[key][0]) {
+          const folder = key === 'thumbnail' ? 'thumbnails' : (category?.type?.toLowerCase().replace(" ", "_") || "products");
+          fileUrls[key] = await uploadToB2(files[key][0].buffer, files[key][0].originalname, folder);
+        }
+      }
+    }
 
     const Model = getModelByCategoryType(type.toUpperCase());
     if (!Model) {
-      return res.status(400).json({ message: "Invalid product type" });
+      // Dynamic Table Update
+      const tableName = type.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+      const updateData = { title, description, price: price || 0, ...fileUrls, updatedAt: new Date() };
+      if (categoryId) updateData.categoryId = categoryId;
+      if (fileUrls.thumbnail) updateData.thumbnail = fileUrls.thumbnail;
+
+      // Clean undefined
+      Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+      const updates = Object.keys(updateData).map(k => `${k} = ?`).join(', ');
+      const values = Object.values(updateData);
+
+      await sequelize.query(`UPDATE ${tableName} SET ${updates} WHERE id = ?`, {
+        replacements: [...values, id]
+      });
+      return res.status(200).json({ message: "Product updated successfully in dynamic table" });
     }
 
     const product = await Model.findByPk(id);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
-    const category = await Category.findByPk(categoryId || product.categoryId);
+    if (Model === Video && fileUrls.mainFile) fileUrls.videoUrl = fileUrls.mainFile;
+    if (Model === Book && fileUrls.mainFile) fileUrls.pdfUrl = fileUrls.mainFile;
+    if (Model === AfricanStory && fileUrls.mainFile) fileUrls.storyBookUrl = fileUrls.mainFile;
 
-    let fileUrls = {};
-    let thumbnailUrl = product.thumbnail;
-
-    // Handle Image/Thumbnail update
-    if (files?.thumbnail?.[0]) {
-      thumbnailUrl = await uploadToB2(
-        files.thumbnail[0].buffer,
-        files.thumbnail[0].originalname,
-        "thumbnails"
-      );
-    }
-
-    // Handle other specific files depending on type
-    if (files?.mainFile?.[0]) {
-      const fileUrl = await uploadToB2(
-        files.mainFile[0].buffer,
-        files.mainFile[0].originalname,
-        category.type?.toLowerCase().replace(" ", "_") || "products"
-      );
-
-      if (Model === Video) fileUrls.videoUrl = fileUrl;
-      else if (Model === Book) fileUrls.pdfUrl = fileUrl;
-      else if (Model === AfricanStory) fileUrls.storyBookUrl = fileUrl;
-    }
-
-    if (files?.videoFile?.[0] && Model === AfricanStory) {
-      fileUrls.videoUrl = await uploadToB2(
-        files.videoFile[0].buffer, files.videoFile[0].originalname, "story_videos"
-      );
-    }
-    if (files?.coloringBookFile?.[0] && Model === AfricanStory) {
-      fileUrls.coloringBookUrl = await uploadToB2(
-        files.coloringBookFile[0].buffer, files.coloringBookFile[0].originalname, "story_coloring_books"
-      );
-    }
-    if (files?.flashcardsFile?.[0] && Model === AfricanStory) {
-      fileUrls.flashcardsUrl = await uploadToB2(
-        files.flashcardsFile[0].buffer, files.flashcardsFile[0].originalname, "story_flashcards"
-      );
-    }
-
-    // Base product data update
     const updateData = {
       title: title || product.title,
       description: description || product.description,
       categoryId: categoryId || product.categoryId,
-      thumbnail: thumbnailUrl,
-      ...fileUrls,
+      ...fileUrls
     };
+
+    if (fileUrls.thumbnail) updateData.thumbnail = fileUrls.thumbnail;
 
     if (Model === Album) {
       updateData.songs = songs !== undefined ? songs : product.songs;
@@ -410,18 +388,23 @@ exports.updateUnifiedProduct = async (req, res) => {
       updateData.usd = usd !== undefined ? usd : product.usd;
       updateData.status = status !== undefined ? status : product.status;
       updateData.youtubeUrl = youtubeUrl !== undefined ? youtubeUrl : product.youtubeUrl;
-      if (thumbnailUrl) updateData.image = thumbnailUrl;
+
+      if (req.body.contents) {
+        try {
+          updateData.contents = JSON.parse(req.body.contents);
+        } catch (e) { console.error("Could not parse contents on update", e); }
+      }
+
+      if (fileUrls.thumbnail) updateData.image = fileUrls.thumbnail;
     } else {
       updateData.price = price !== undefined ? price : product.price;
-      if (Model === Book && thumbnailUrl) updateData.coverImage = thumbnailUrl;
+      if (Model === Book && fileUrls.thumbnail) updateData.coverImage = fileUrls.thumbnail;
       if (Model === Book && fileUrls.pdfUrl) updateData.fileUrl = fileUrls.pdfUrl;
       if (Model === Video && fileUrls.videoUrl) updateData.fileUrl = fileUrls.videoUrl;
     }
 
     await Model.update(updateData, { where: { id } });
-    const updatedProduct = await Model.findByPk(id);
-
-    res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
+    res.status(200).json({ message: "Product updated successfully" });
   } catch (error) {
     console.error("Error updating product:", error);
     res.status(500).json({ message: "Error updating product", error });

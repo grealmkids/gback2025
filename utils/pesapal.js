@@ -33,7 +33,7 @@ class PesapalService {
 
         const payload = {
             id: orderData.id, // Our custom generated reference
-            currency: "UGX",
+            currency: orderData.currency || "UGX",
             amount: Number(parseFloat(orderData.amount.toString()).toFixed(2)),
             description: orderData.description,
             callback_url: callbackUrl,

@@ -19,13 +19,41 @@ exports.initiateCheckout = async (req, res) => {
             return res.status(400).json({ message: "Cart is empty" });
         }
 
-        // 2. Calculate Total
-        const amount = cart.CartItems.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
+        // 2. Fetch currency from request (default to UGX)
+        const targetCurrency = req.body.currency === 'USD' ? 'USD' : 'UGX';
+
+        // 3. Calculate Total dynamically based on currency
+        let amount = 0;
+        for (const item of cart.CartItems) {
+            if (targetCurrency === 'USD') {
+                // Fetch product to see if it has explicit USD price
+                let product;
+                try {
+                    const { Album, Video, Book, AfricanStory } = require("../models");
+                    if (item.productType === "Albums" || item.productType === "COLLECTION") product = await Album.findByPk(item.productId);
+                    else if (item.productType === "AfricanStories" || item.productType === "STORY") product = await AfricanStory.findByPk(item.productId);
+                    else if (item.productType === "VIDEO" || item.productType === "VIDEO MP4") product = await Video.findByPk(item.productId);
+                    else if (item.productType === "PDF" || item.productType === "BOOK") product = await Book.findByPk(item.productId);
+                    else product = await Album.findByPk(item.productId);
+                } catch (e) { }
+
+                if (product && product.usd !== undefined && product.usd !== null && parseFloat(product.usd) > 0) {
+                    amount += (parseFloat(product.usd) * item.quantity);
+                } else {
+                    // Fallback exchange rate 1 USD = 3700 UGX
+                    amount += ((parseFloat(item.price) / 3700) * item.quantity);
+                }
+            } else {
+                // UGX base
+                amount += (parseFloat(item.price) * item.quantity);
+            }
+        }
+
         if (amount <= 0) {
             return res.status(400).json({ message: "Cart total must be greater than zero to checkout via Pesapal" });
         }
 
-        // 3. Get Billing Address (Important for Pesapal)
+        // 4. Get Billing Address (Important for Pesapal)
         let billingAddress = await BillingAddress.findOne({ where: { userId } });
         let user = await User.findByPk(userId);
 
@@ -54,10 +82,11 @@ exports.initiateCheckout = async (req, res) => {
         const clientName = `${billingAddress.first_name || 'User'} ${billingAddress.last_name || ''}`.trim();
         const itemTitles = itemsSnapshot.map(item => item.title).join(', ');
 
-        // 4. Submit to Pesapal
+        // 5. Submit to Pesapal
         const orderData = {
             id: merchantReference,
             school_id: 1, // Optional: if using generic payload from bigezolite
+            currency: targetCurrency,
             amount: amount,
             description: `Grealm Studio_${clientName}_${itemTitles}`,
             billing_address: billingAddress,

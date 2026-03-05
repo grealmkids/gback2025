@@ -20,6 +20,11 @@ router.post(
         { name: "videoFile", maxCount: 1 },
         { name: "coloringBookFile", maxCount: 1 },
         { name: "flashcardsFile", maxCount: 1 },
+        { name: "photo_url_1", maxCount: 1 },
+        { name: "photo_url_2", maxCount: 1 },
+        { name: "photo_url_3", maxCount: 1 },
+        { name: "photo_url_4", maxCount: 1 },
+        { name: "photo_url_5", maxCount: 1 },
     ]),
     adminController.createProduct
 );
@@ -39,6 +44,11 @@ router.put(
         { name: "videoFile", maxCount: 1 },
         { name: "coloringBookFile", maxCount: 1 },
         { name: "flashcardsFile", maxCount: 1 },
+        { name: "photo_url_1", maxCount: 1 },
+        { name: "photo_url_2", maxCount: 1 },
+        { name: "photo_url_3", maxCount: 1 },
+        { name: "photo_url_4", maxCount: 1 },
+        { name: "photo_url_5", maxCount: 1 },
     ]),
     adminController.updateUnifiedProduct
 );
