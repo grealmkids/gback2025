@@ -40,8 +40,8 @@ exports.initiateCheckout = async (req, res) => {
                 if (product && product.usd !== undefined && product.usd !== null && parseFloat(product.usd) > 0) {
                     amount += (parseFloat(product.usd) * item.quantity);
                 } else {
-                    // Fallback exchange rate 1 USD = 3700 UGX
-                    amount += ((parseFloat(item.price) / 3700) * item.quantity);
+                    // Fallback exchange rate 1 USD = 3500 UGX
+                    amount += ((parseFloat(item.price) / 3500) * item.quantity);
                 }
             } else {
                 // UGX base
