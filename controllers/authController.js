@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs"); // CHANGED: Replaced bcrypt with bcryptjs
 const User = require("../models/user");
 const { sendSMS } = require("../utils/smsService");
 const nodemailer = require("nodemailer");
@@ -9,7 +9,8 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "grealmkids@gmail.com",
-    pass: "your-email-password", // Replace with your Gmail app password
+    // SECURITY TIP: Move this to process.env.EMAIL_PASSWORD
+    pass: "your-email-password",
   },
 });
 
@@ -63,8 +64,9 @@ exports.sendClientOTP = async (req, res) => {
       );
     } else {
       const message = `Your verification code is: ${otp}`;
-      username = "alfredochola"; // Replace with your SMS username
-      password = "JesusisLORD"; // Replace with your SMS password
+      // SECURITY TIP: Move these to process.env.SMS_USERNAME and process.env.SMS_PASSWORD
+      username = "alfredochola";
+      password = "JesusisLORD";
       await sendSMS(username, password, "sender", phoneOrEmail, message);
     }
 
